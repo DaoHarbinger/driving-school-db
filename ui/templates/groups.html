@@ -1,0 +1,74 @@
+{% extends "base.html" %}{% from "_macros.html" import table %}
+{% block content %}
+<h1>Групи і теоретичні заняття</h1>
+<div class="cols">
+  <section class="wide">
+    <div class="scroll"><table>
+      <thead><tr><th>Група</th><th>Кат.</th><th>Початок</th><th>Кінець</th><th>Зміна</th><th>Навчається / місць</th><th>Теорія заплановано</th></tr></thead>
+      <tbody>{% for g in group_list %}
+        <tr class="{{ 'selected' if g.group_id == group_id }}">
+          <td><a href="{{ url_for('groups', group_id=g.group_id) }}">{{ g.name }}</a></td><td>{{ g.category }}</td>
+          <td>{{ g.start_date|fmt }}</td><td>{{ g.end_date|fmt }}</td><td>{{ g.shift|fmt }}</td>
+          <td>{{ g.studying }} / {{ g.max_students }}</td>
+          <td class="{{ 'v-missed' if g.hours < g.theory_hours_min }}">{{ g.lessons }} зан. · {{ g.hours|fmt }} з {{ g.theory_hours_min }} год</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+
+    {% if current %}
+    <h2>Теорія групи {{ current.name }}: останні 2 тижні і далі</h2>
+    {% if lessons %}
+    <div class="scroll"><table>
+      <thead><tr><th>Початок</th><th>Год</th><th>Тема</th><th>Викладач</th><th>Статус</th><th></th></tr></thead>
+      <tbody>{% for l in lessons %}
+        <tr><td>{{ l.starts_at|fmt }}</td><td>{{ l.duration_hours|fmt }}</td><td class="c-topic">{{ l.topic }}</td>
+          <td class="c-student">{{ l.teacher }}</td><td class="v-{{ l.status }}">{{ l.status|fmt }}</td>
+          <td class="actions">{% if l.status == 'planned' and l.starts_at > now %}
+            <form method="post" onsubmit="return confirm('Скасувати заняття {{ l.starts_at|fmt }}?');">
+              <input type="hidden" name="action" value="cancel_theory"><input type="hidden" name="lesson_id" value="{{ l.lesson_id }}">
+              <input type="hidden" name="group_id" value="{{ group_id }}"><button class="secondary">Скасувати</button></form>{% endif %}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    {% else %}<p class="muted">Занять ще не заплановано</p>{% endif %}
+    {% endif %}
+  </section>
+
+  <section>
+    <details class="card" {{ 'open' if group_id }}>
+      <summary><b>Запланувати теорію</b></summary>
+      <form method="post" class="stack">
+        <input type="hidden" name="action" value="theory">
+        <label>Група
+          <select name="group_id" required>{% for g in group_list %}
+            <option value="{{ g.group_id }}" {{ 'selected' if g.group_id == group_id }}>{{ g.name }}</option>{% endfor %}</select></label>
+        <label>Викладач
+          <select name="teacher_id" required>{% for t in teachers %}<option value="{{ t.employee_id }}">{{ t.full_name }}</option>{% endfor %}</select></label>
+        <label>Перша дата<input type="date" name="first_date" value="{{ current.start_date if current and current.start_date|string > today else today }}" required></label>
+        <label>Час початку<input type="time" name="time" value="{{ '09:00' if current and current.shift == 'morning' else '18:00' }}" required></label>
+        <fieldset><legend>Дні тижня</legend>
+          <div class="days">{% for d in weekdays %}<label class="check"><input type="checkbox" name="weekday" value="{{ loop.index0 }}"
+            {{ 'checked' if loop.index0 in (0, 2) }}> {{ d }}</label>{% endfor %}</div></fieldset>
+        <label>Кількість занять<input type="number" name="count" min="1" max="60" value="1"></label>
+        <label>Тривалість, год<select name="duration"><option>1.0</option><option>1.5</option><option selected>2.0</option><option>3.0</option></select></label>
+        <label>Тема<input name="topic" required maxlength="140" placeholder="напр. Дорожні знаки"></label>
+        <button>Запланувати</button>
+        <p class="muted small">Накладки (викладач, група, практика курсантів), кваліфікацію й строк групи перевіряє тригер.
+          Заняття, що не пройшли перевірку, пропускаються з поясненням.</p>
+      </form>
+    </details>
+
+    <details class="card" {{ 'open' if not group_id }}>
+      <summary><b>Нова група</b></summary>
+      <form method="post" class="stack">
+        <input type="hidden" name="action" value="group">
+        <label>Назва<input name="name" required maxlength="30" placeholder="напр. B-2027-01-В"></label>
+        <label>Категорія<select name="category_id">{% for c in categories %}<option value="{{ c.category_id }}" {{ 'selected' if c.code == 'B' }}>{{ c.code }} - {{ c.name }}</option>{% endfor %}</select></label>
+        <label>Початок<input type="date" name="start_date" required></label>
+        <label>Кінець<input type="date" name="end_date" required></label>
+        <label>Зміна<select name="shift"><option value="evening">вечірня</option><option value="morning">ранкова</option></select></label>
+        <label>Місткість<input type="number" name="max_students" min="1" max="40" value="12" required></label>
+        <button>Створити групу</button>
+      </form>
+    </details>
+  </section>
+</div>
+{% endblock %}

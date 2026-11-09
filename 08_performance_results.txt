@@ -1,0 +1,29 @@
+Результати 08_performance.sql (MySQL 8.0, 500 тис. занять / 300 тис. платежів / 100 тис. курсантів)
+Час - фактичний час виконання з EXPLAIN ANALYZE.
+Рядків - скільки рядків повернув метод доступу до таблиці/індексу.
+
+Запит                                                                Час, мс   Метод доступу                 Рядків
+Q1 з індексом ix_practice_instructor                                   0.065   Index range scan                  16
+Q1 без індексу (повне сканування таблиці)                            160.000   Table scan                    500000
+Q2 з індексом                                                         30.100   Index range scan                7167
+Q2b з індексом і нижньою межею (так тепер у тригері)                   0.018   Index range scan                   0
+Q2 без індексу                                                       194.000   Table scan                    500000
+Q3a DATE(starts_at) = ... (функція над стовпцем)                       0.948   Index lookup                       2
+Q3b starts_at >= d AND starts_at < d + 1 (діапазон)                    0.022   Index range scan                   2
+Q4 з індексом ix_payments_enrollment                                   0.059   Index lookup                      15
+Q4 без індексу                                                        73.400   Table scan                    300000
+Q5a префіксний пошук                                                   0.283   Covering index range scan        464
+Q5b пошук за підрядком (% на початку)                                 37.700   Covering index scan           100000
+Q6a лише за датою, без індексу по starts_at                            0.484   Covering index skip scan         144
+Q6b після CREATE INDEX ix_practice_starts (starts_at)                  0.072   Covering index range scan        144
+
+Примітка до Q3a: рядків лише 2, бо умова DATE(...) перевіряється всередині
+рушія (index condition pushdown), але для цього перебираються ВСІ ~8 300 записів
+індексу інструктора 17 - звідси різниця в часі у 40+ разів порівняно з Q3b.
+
+Розмір індексів таблиці practice_lessons, МБ (ціна індексів):
+PRIMARY	25.5
+ix_practice_enrollment	10.5
+ix_practice_instructor	12.5
+ix_practice_starts	8.5
+ix_practice_vehicle	12.5

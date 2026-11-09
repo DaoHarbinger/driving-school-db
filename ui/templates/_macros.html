@@ -1,0 +1,14 @@
+{# Універсальна таблиця: rows - список словників з бази; cols - які стовпці показувати #}
+{% macro table(rows, cols=None, empty='Немає даних') %}
+  {% if rows %}
+    {% set cols = cols or rows[0].keys()|list %}
+    <div class="scroll"><table>
+      <thead><tr>{% for c in cols %}<th>{{ c|label }}</th>{% endfor %}</tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>{% for c in cols %}<td class="c-{{ c }} v-{{ r[c]|string|lower }}">{{ r[c]|fmt(c) }}</td>{% endfor %}</tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  {% else %}<p class="muted">{{ empty }}</p>{% endif %}
+{% endmacro %}

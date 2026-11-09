@@ -1,0 +1,9 @@
+# Файл облікових даних для резервного копіювання.
+# Скопіюйте у backup.cnf і обмежте доступ:  chmod 600 backup.cnf
+# Пароль у файлі, а не в командному рядку: інакше його видно в списку процесів (ps)
+# та в історії команд.
+[client]
+user=backup_agent
+password=Bkp_2026_ds!
+host=localhost
+default-character-set=utf8mb4

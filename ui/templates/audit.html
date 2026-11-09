@@ -1,0 +1,6 @@
+{% extends "base.html" %}{% from "_macros.html" import table %}
+{% block content %}
+<h1>Журнал аудиту</h1>
+<p class="muted">Записи лише додаються: змінити чи видалити їх не може ніхто (тригери бази даних).</p>
+{{ table(rows, empty='Журнал порожній: змін після завантаження тестових даних ще не було') }}
+{% endblock %}

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Автошкола{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+{% if session.user %}
+<header class="top">
+  <div class="brand">Автошкола<span>ІС обліку навчання</span></div>
+  <nav>
+    {% for endpoint, title in menu %}
+      <a href="{{ url_for(endpoint) }}" class="{{ 'active' if request.endpoint == endpoint }}">{{ title }}</a>
+    {% endfor %}
+  </nav>
+  <div class="who">
+    <b>{{ session.user }}</b><small>{{ role_title }}</small>
+    <a href="{{ url_for('logout') }}" class="logout">Вийти</a>
+  </div>
+</header>
+{% endif %}
+<main>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}<div class="flash {{ cat }}">{{ msg }}</div>{% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

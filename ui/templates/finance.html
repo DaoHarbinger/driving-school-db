@@ -1,0 +1,37 @@
+{% extends "base.html" %}{% from "_macros.html" import table %}
+{% block content %}
+<h1>Фінанси</h1>
+<div class="cols">
+  <section class="wide">
+    <form class="filters">
+      <label>Курсант
+        <select name="student_id"><option value="">— оберіть курсанта —</option>
+          {% for s in students %}<option value="{{ s.student_id }}" {{ 'selected' if s.student_id == student_id }}>{{ s.full_name }}</option>{% endfor %}
+        </select></label>
+      <button>Історія оплат</button>
+    </form>
+    {% if student_id %}
+      <h2>Операції</h2>{{ table(history[0] if history|length > 1 else [], empty='Оплат ще не було') }}
+      <h2>Підсумок</h2>{{ table(history[-1] if history else []) }}
+    {% endif %}
+  </section>
+  <section>
+    <h2>Внести оплату / повернення</h2>
+    <form method="post" class="card">
+      <input type="hidden" name="student_id" value="{{ student_id or '' }}">
+      <label>Навчання
+        <select name="enrollment_id" required>{% for e in enrollments %}
+          <option value="{{ e.enrollment_id }}">{{ e.full_name }} ({{ e.group_name }})</option>{% endfor %}
+        </select></label>
+      <label>Операція<select name="kind"><option value="payment">оплата</option><option value="refund">повернення</option></select></label>
+      <label>Сума, грн<input type="number" name="amount" min="0.01" step="0.01" required></label>
+      <label>Спосіб<select name="method_id">{% for m in methods %}<option value="{{ m.method_id }}">{{ m.name }}</option>{% endfor %}</select></label>
+      <label>Коментар<input name="note" placeholder="напр. номер квитанції"></label>
+      <button>Зберегти</button>
+      <p class="muted small">Переплату й повернення понад сплачене відхиляє тригер. Змінити чи видалити платіж не можна.</p>
+    </form>
+  </section>
+</div>
+<h2>Боржники</h2>
+{{ table(debtors, empty='Боржників немає') }}
+{% endblock %}

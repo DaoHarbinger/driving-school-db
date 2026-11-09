@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Мої практичні заняття</h1>
+<form class="filters">
+  <label>Тиждень навколо дати<input type="date" name="on" value="{{ on }}"></label>
+  <button>Показати</button>
+</form>
+{% if rows %}
+<div class="scroll"><table>
+  <thead><tr><th>Початок</th><th>Кінець</th><th>Курсант</th><th>Телефон</th><th>Група</th><th>Автомобіль</th><th>Статус</th><th></th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td>{{ r.starts_at|fmt }}</td><td>{{ r.ends_at|fmt }}</td><td>{{ r.student }}</td><td>{{ r.student_phone }}</td>
+      <td>{{ r.group_name }}</td><td>{{ r.vehicle }}</td><td class="v-{{ r.status }}">{{ r.status|fmt }}</td>
+      <td class="actions">
+        {% if r.status == 'planned' and r.starts_at <= now %}
+          <form method="post"><input type="hidden" name="lesson_id" value="{{ r.lesson_id }}"><input type="hidden" name="on" value="{{ on }}">
+            <button name="status" value="done">Проведено</button><button name="status" value="missed" class="secondary">Не прийшов</button></form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}<p class="muted">Занять у цей період немає</p>{% endif %}
+{% endblock %}

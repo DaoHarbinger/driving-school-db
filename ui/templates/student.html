@@ -1,0 +1,62 @@
+{% extends "base.html" %}{% from "_macros.html" import table %}
+{% block content %}
+<p><a href="{{ url_for('students') }}">← до списку курсантів</a></p>
+{% if s %}
+<h1>{{ s.full_name }}</h1>
+<div class="cols">
+  <section class="wide">
+    <h2>Навчання</h2>
+    {% if studies %}
+    <div class="scroll"><table>
+      <thead><tr><th>Група</th><th>Кат.</th><th>Статус</th><th>Теорія, год</th><th>Практика, год</th><th>Ціна</th><th>Сплачено</th><th>Борг</th><th>Допуск до іспиту</th><th>Змінити статус</th></tr></thead>
+      <tbody>{% for r in studies %}
+        <tr><td>{{ r.group_name }}</td><td>{{ r.category }}</td><td class="v-{{ r.status }}">{{ r.status|fmt }}</td>
+          <td>{{ r.theory_hours|fmt }} / {{ r.theory_hours_min }}</td><td>{{ r.practice_hours|fmt }} / {{ r.practice_hours_min }}</td>
+          <td>{{ r.agreed_price|fmt }}</td><td>{{ r.paid|fmt }}</td><td>{{ r.debt|fmt }}</td>
+          <td class="c-reasons">{% if r.status == 'graduated' %}<span class="muted">навчання завершено</span>
+            {% elif r.status == 'expelled' %}<span class="muted">—</span>
+            {% elif r.admitted %}<span class="v-studying">допущено</span>{% else %}{{ r.reasons }}{% endif %}</td>
+          <td class="actions">{% if r.status in ('studying', 'leave') %}
+            <form method="post" onsubmit="return confirm('Змінити статус навчання в групі {{ r.group_name }}?');">
+              <input type="hidden" name="action" value="status"><input type="hidden" name="enrollment_id" value="{{ r.enrollment_id }}">
+              {% if r.status == 'studying' %}<button name="new_status" value="leave" class="secondary">Академвідпустка</button>
+              {% else %}<button name="new_status" value="studying" class="secondary">Повернути до навчання</button>{% endif %}
+              <button name="new_status" value="expelled" class="secondary danger">Відрахувати</button>
+            </form>{% endif %}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    {% else %}<div class="flash warn">Курсант ще не зарахований до жодної групи - зарахуйте його формою праворуч.</div>{% endif %}
+
+    <h2>Документи</h2>
+    {{ table(documents, ['doc_type','number','issue_date','valid_until','validity'], 'Документів немає') }}
+  </section>
+
+  <section>
+    <details class="card" {{ 'open' if not studies }}>
+      <summary><b>Зарахувати до групи</b></summary>
+      <form method="post" class="stack">
+        <input type="hidden" name="action" value="enroll">
+        <label>Група (лише ті, де навчання ще триває)
+          <select name="group_id" required>{% for g in open_groups %}<option value="{{ g.group_id }}" {{ 'disabled' if g.studying >= g.max_students }}>{{ g.name }} ({{ g.studying }}/{{ g.max_students }}{{ ', немає місць' if g.studying >= g.max_students }})</option>{% endfor %}</select></label>
+        <label>Ціна, грн (порожньо - за прейскурантом)<input type="number" name="price" min="0" step="0.01"></label>
+        <label>Підстава знижки<input name="discount_note" maxlength="100"></label>
+        <label>Перший внесок, грн (необов'язково)<input type="number" name="first_payment" min="0" step="0.01"></label>
+        <label>Спосіб оплати<select name="method_id">{% for m in methods %}<option value="{{ m.method_id }}">{{ m.name }}</option>{% endfor %}</select></label>
+        <button>Зарахувати</button>
+      </form>
+    </details>
+
+    <h2>Особисті дані</h2>
+    <form method="post" class="card">
+      <label>ПІБ<input name="full_name" value="{{ s.full_name }}" required maxlength="120"></label>
+      <label>Дата народження<input type="date" name="birth_date" value="{{ s.birth_date }}" required></label>
+      <label>Телефон<input name="phone" value="{{ s.phone }}" required maxlength="20"></label>
+      <label>Email<input type="email" name="email" value="{{ s.email or '' }}" maxlength="100"></label>
+      <label>Адреса<input name="address" value="{{ s.address or '' }}" maxlength="200"></label>
+      <p class="muted small">Зареєстровано: {{ s.registered_at|fmt }}</p>
+      <button>Зберегти зміни</button>
+    </form>
+  </section>
+</div>
+{% endif %}
+{% endblock %}

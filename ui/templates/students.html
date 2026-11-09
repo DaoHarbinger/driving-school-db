@@ -1,0 +1,98 @@
+{% extends "base.html" %}{% from "_macros.html" import table %}
+{% block content %}
+<h1>Курсанти</h1>
+<div class="cols">
+  <section class="wide">
+    <form class="filters">
+      <label>Група
+        <select name="group_id"><option value="">усі групи</option>
+          {% for g in groups %}<option value="{{ g.group_id }}" {{ 'selected' if g.group_id == group_id }}>{{ g.name }}</option>{% endfor %}
+        </select></label>
+      <label class="check"><input type="checkbox" name="active" value="1" {{ 'checked' if only_active }}> лише ті, хто навчається</label>
+      <button>Показати</button>
+    </form>
+    {% if not_enrolled %}
+    <div class="flash warn"><b>Не зараховані до жодної групи ({{ not_enrolled|length }}):</b>
+      {% for s in not_enrolled %}<a href="{{ url_for('student_card', student_id=s.student_id) }}">{{ s.full_name }}</a>{{ ', ' if not loop.last }}{% endfor %}.
+      Без зарахування курсант не з'являється в практиці, іспитах і фінансах.</div>
+    {% endif %}
+    <p class="muted">Зарахувань: {{ rows|length }}</p>
+    {% if rows %}
+    <div class="scroll"><table>
+      <thead><tr><th>Група</th><th>Кат.</th><th>Курсант</th><th>Телефон</th><th>Email</th><th>Статус</th><th>Зараховано</th></tr></thead>
+      <tbody>{% for r in rows %}
+        <tr><td>{{ r.group_name }}</td><td>{{ r.category }}</td>
+          <td class="c-student"><a href="{{ url_for('student_card', student_id=r.student_id) }}">{{ r.student }}</a></td>
+          <td>{{ r.phone }}</td><td>{{ r.email or '—' }}</td><td>{{ r.status }}</td><td>{{ r.enrolled_on|fmt }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    {% else %}<p class="muted">Немає даних</p>{% endif %}
+  </section>
+
+  <section>
+    <details class="card" {{ 'open' if not new_id }}>
+      <summary><b>Новий курсант</b></summary>
+      <form method="post" class="stack">
+        <input type="hidden" name="action" value="student">
+        <label>ПІБ<input name="full_name" required maxlength="120" placeholder="Прізвище Ім'я По батькові"></label>
+        <label>Дата народження<input type="date" name="birth_date" required></label>
+        <label>Телефон<input name="phone" required maxlength="20" placeholder="+380..."></label>
+        <label>Email<input type="email" name="email" maxlength="100"></label>
+        <label>Адреса<input name="address" maxlength="200"></label>
+        <fieldset><legend>Медична довідка (можна додати пізніше)</legend>
+          <label>Номер<input name="med_number" maxlength="40" placeholder="083/о-..."></label>
+          <label>Дата видачі<input type="date" name="med_issue"></label>
+          <label>Дійсна до<input type="date" name="med_valid"></label>
+        </fieldset>
+        <fieldset><legend>Зарахування (можна пізніше)</legend>
+          <label>Група
+            <select name="group_id"><option value="">— не зараховувати зараз —</option>
+              {% for g in open_groups %}<option value="{{ g.group_id }}" {{ 'disabled' if g.studying >= g.max_students }}>{{ g.name }} ({{ g.studying }}/{{ g.max_students }}{{ ', немає місць' if g.studying >= g.max_students }})</option>{% endfor %}
+            </select></label>
+          <label>Перший внесок, грн<input type="number" name="first_payment" min="0" step="0.01"></label>
+          <label>Спосіб оплати<select name="method_id">{% for m in methods %}<option value="{{ m.method_id }}">{{ m.name }}</option>{% endfor %}</select></label>
+        </fieldset>
+        <button>Додати курсанта</button>
+      </form>
+    </details>
+
+    <details class="card" {{ 'open' if new_id }}>
+      <summary><b>Зарахувати до групи</b></summary>
+      <form method="post" class="stack">
+        <input type="hidden" name="action" value="enroll">
+        <label>Курсант
+          <select name="student_id" required>{% for s in all_students %}
+            <option value="{{ s.student_id }}" {{ 'selected' if s.student_id == new_id }}>{{ s.full_name }} · {{ s.phone }}</option>{% endfor %}
+          </select></label>
+        <label>Група (лише ті, де навчання ще триває)
+          <select name="group_id" required>{% for g in open_groups %}<option value="{{ g.group_id }}" {{ 'disabled' if g.studying >= g.max_students }}>{{ g.name }} ({{ g.studying }}/{{ g.max_students }}{{ ', немає місць' if g.studying >= g.max_students }})</option>{% endfor %}</select></label>
+        <label>Ціна, грн (порожньо - за прейскурантом)<input type="number" name="price" min="0" step="0.01"></label>
+        <label>Підстава знижки<input name="discount_note" maxlength="100"></label>
+        <label>Перший внесок, грн (необов'язково)<input type="number" name="first_payment" min="0" step="0.01"></label>
+        <label>Спосіб оплати
+          <select name="method_id">{% for m in methods %}<option value="{{ m.method_id }}">{{ m.name }}</option>{% endfor %}</select></label>
+        <button>Зарахувати</button>
+        <p class="muted small">Зарахування і внесок зберігаються однією транзакцією: або обидва, або жоден.
+          Місткість групи й переплату перевіряють тригери.</p>
+      </form>
+    </details>
+
+    <details class="card">
+      <summary><b>Додати документ</b></summary>
+      <form method="post" class="stack">
+        <input type="hidden" name="action" value="document">
+        <label>Курсант
+          <select name="student_id" required>{% for s in all_students %}
+            <option value="{{ s.student_id }}">{{ s.full_name }} · {{ s.phone }}</option>{% endfor %}
+          </select></label>
+        <label>Тип
+          <select name="document_type_id">{% for t in doc_types %}<option value="{{ t.document_type_id }}">{{ t.name }}</option>{% endfor %}</select></label>
+        <label>Номер<input name="number" required maxlength="40"></label>
+        <label>Дата видачі<input type="date" name="issue_date" required></label>
+        <label>Дійсний до (порожньо - безстроковий)<input type="date" name="valid_until"></label>
+        <button>Додати документ</button>
+      </form>
+    </details>
+  </section>
+</div>
+{% endblock %}

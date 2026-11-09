@@ -1,0 +1,77 @@
+{% extends "base.html" %}{% from "_macros.html" import table %}
+{% block content %}
+<h1>Персонал і доступ</h1>
+<div class="forms2">
+    <details class="card">
+      <summary><b>Новий співробітник</b></summary>
+      <form method="post" class="stack">
+        <input type="hidden" name="action" value="employee">
+        <label>ПІБ<input name="full_name" required maxlength="120"></label>
+        <label>Телефон<input name="phone" required maxlength="20" placeholder="+380..."></label>
+        <label>Посада<select name="role"><option value="instructor">інструктор з водіння</option><option value="teacher">викладач теорії</option></select></label>
+        <label>Дата прийняття<input type="date" name="hire_date" value="{{ today }}" required></label>
+        <label>Стаж, років<input type="number" name="experience_years" min="0" max="60" value="0"></label>
+        <fieldset><legend>Має право викладати категорії</legend>
+          {% for c in categories %}<label class="check"><input type="checkbox" name="category_id" value="{{ c.category_id }}"> {{ c.code }} - {{ c.name }}</label>{% endfor %}
+        </fieldset>
+        <button>Додати співробітника</button>
+      </form>
+    </details>
+
+    <details class="card">
+      <summary><b>Новий обліковий запис</b></summary>
+      <form method="post" class="stack">
+        <input type="hidden" name="action" value="account">
+        <label>Роль
+          <select name="role" id="acc-role">
+            <option value="r_manager">менеджер</option><option value="r_accountant">бухгалтер</option>
+            <option value="r_instructor">інструктор</option><option value="r_teacher">викладач</option>
+            <option value="r_auditor">аудитор</option>
+          </select></label>
+        <label>Співробітник (для інструктора / викладача)
+          <select name="employee_id"><option value="">— не прив'язувати —</option>
+            {% for e in free_employees %}<option value="{{ e.employee_id }}">{{ e.full_name }} ({{ e.position|fmt }})</option>{% endfor %}
+          </select></label>
+        <label>Логін<input name="login" required maxlength="32" pattern="[a-z][a-z0-9_]{2,31}" placeholder="напр. instr_petrenko"></label>
+        <label>Пароль<input name="password" type="password" required minlength="10" autocomplete="new-password"></label>
+        <button>Створити обліковий запис</button>
+        <p class="muted small">Обліковий запис створює процедура з правами root, але лише з 5 дозволеними ролями.
+          Логін і пароль перевіряє база даних. Після 5 невдалих спроб входу запис блокується на добу.</p>
+      </form>
+    </details>
+</div>
+<section>
+    <h2>Співробітники</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>ПІБ</th><th>Посада</th><th>Категорії</th><th>Телефон</th><th>Прийнятий</th><th>Логін</th><th>Стан</th><th></th></tr></thead>
+      <tbody>{% for e in employees %}
+        <tr>
+          <td class="c-student">{{ e.full_name }}</td><td>{{ e.position|fmt }}</td><td>{{ e.qualifications or '—' }}</td>
+          <td>{{ e.phone }}</td><td>{{ e.hire_date|fmt }}</td><td>{{ e.db_login or '—' }}</td>
+          <td class="{{ 'v-studying' if e.is_active else 'v-expelled' }}">{{ 'працює' if e.is_active else 'звільнений' }}</td>
+          <td class="actions">{% if e.is_active %}
+            <form method="post" onsubmit="return confirm('Позначити {{ e.full_name }} як звільненого?');">
+              <input type="hidden" name="action" value="deactivate"><input type="hidden" name="employee_id" value="{{ e.employee_id }}">
+              <button class="secondary">Звільнити</button></form>
+            {% else %}
+            <form method="post"><input type="hidden" name="action" value="reactivate"><input type="hidden" name="employee_id" value="{{ e.employee_id }}">
+              <button class="secondary">Повернути</button></form>{% endif %}</td>
+        </tr>{% endfor %}
+      </tbody></table></div>
+
+    <h2>Облікові записи</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Логін</th><th>Роль</th><th>Співробітник</th><th>Заблоковано</th><th>Пароль змінено</th><th></th></tr></thead>
+      <tbody>{% for a in accounts %}
+        <tr>
+          <td>{{ a.login }}</td><td>{{ a.role|fmt }}</td><td class="c-student">{{ a.employee or '—' }}</td>
+          <td class="{{ 'v-expelled' if a.locked }}">{{ a.locked|fmt('locked') }}</td><td>{{ a.password_changed|fmt }}</td>
+          <td class="actions">{% if a.role != 'r_admin' %}
+            <form method="post"><input type="hidden" name="login" value="{{ a.login }}">
+              {% if a.locked %}<button name="action" value="unlock">Розблокувати</button>
+              {% else %}<button name="action" value="lock" class="secondary">Заблокувати</button>{% endif %}
+            </form>{% endif %}</td>
+        </tr>{% endfor %}
+      </tbody></table></div>
+  </section>
+{% endblock %}

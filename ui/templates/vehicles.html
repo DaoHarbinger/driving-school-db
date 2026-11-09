@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Автомобілі</h1>
+<div class="scroll"><table>
+  <thead><tr><th>Номер</th><th>Автомобіль</th><th>Кат.</th><th>Закріплений інструктор</th><th>Наступне ТО</th><th>Занять заплановано</th><th>ТО пройдено</th>{% if is_admin %}<th></th>{% endif %}</tr></thead>
+  <tbody>{% for v in rows %}
+    <tr class="{{ '' if v.is_active else 'inactive' }}">
+      <td>{{ v.plate_number }}</td>
+      <td class="c-student">{{ v.vehicle }}{% if not v.is_active %} <span class="muted">(списано)</span>{% endif %}<br>
+        <small class="muted">{{ v.production_year }} · {{ 'автомат' if v.transmission == 'automatic' else 'механіка' }}</small></td>
+      <td>{{ v.category }}</td>
+      <td>{% if is_admin and v.is_active %}
+        <form method="post" class="inline"><input type="hidden" name="action" value="instructor"><input type="hidden" name="vehicle_id" value="{{ v.vehicle_id }}">
+          <select name="instructor_id" onchange="this.form.submit()"><option value="">— немає —</option>
+            {% for i in instructors %}<option value="{{ i.employee_id }}" {{ 'selected' if i.employee_id == v.default_instructor_id }}>{{ i.full_name }} ({{ i.cats }})</option>{% endfor %}
+          </select></form>
+        {% else %}{{ v.instructor or '—' }}{% endif %}</td>
+      <td class="{{ 'v-missed' if v.is_active and v.days_left is not none and v.days_left < 0 else ('v-warn' if v.is_active and v.days_left is not none and v.days_left <= 30) }}">
+        {{ v.next_service_date|fmt }}{% if v.is_active %}<br><small>{{ 'прострочено' if v.days_left < 0 else 'через ' ~ v.days_left ~ ' дн.' }}</small>{% endif %}</td>
+      <td>{{ v.planned }}</td>
+      <td>{% if v.is_active %}
+        <form method="post" class="inline"><input type="hidden" name="action" value="service"><input type="hidden" name="vehicle_id" value="{{ v.vehicle_id }}">
+          <input type="date" name="next_date" value="{{ default_next }}" title="дата наступного ТО"><button class="secondary" title="Зберегти дату наступного ТО">✓</button></form>{% endif %}</td>
+      {% if is_admin %}<td class="actions"><form method="post"><input type="hidden" name="vehicle_id" value="{{ v.vehicle_id }}">
+        {% if v.is_active %}<button name="action" value="write_off" class="secondary" onclick="return confirm('Списати {{ v.plate_number }}?')">Списати</button>
+        {% else %}<button name="action" value="restore" class="secondary">Повернути</button>{% endif %}</form></td>{% endif %}
+    </tr>{% endfor %}
+  </tbody></table></div>
+<p class="muted small">«ТО пройдено»: вкажіть дату НАСТУПНОГО ТО (у межах 2 років). Списати авто з майбутніми заняттями не можна.
+  Закріплений інструктор має мати право на категорію авто - це перевіряє база.</p>
+
+{% if is_admin %}
+<details class="card" style="max-width:520px;margin-top:18px">
+  <summary><b>Новий автомобіль</b></summary>
+  <form method="post" class="stack">
+    <input type="hidden" name="action" value="vehicle">
+    <label>Держномер<input name="plate_number" required maxlength="12" placeholder="AA1234BB"></label>
+    <label>Марка<input name="make" required maxlength="40"></label>
+    <label>Модель<input name="model" required maxlength="40"></label>
+    <label>Рік випуску<input type="number" name="production_year" min="1990" max="2100" value="2024" required></label>
+    <label>КПП<select name="transmission"><option value="manual">механіка</option><option value="automatic">автомат</option></select></label>
+    <label>Категорія<select name="category_id">{% for c in categories %}<option value="{{ c.category_id }}" {{ 'selected' if c.code == 'B' }}>{{ c.code }} - {{ c.name }}</option>{% endfor %}</select></label>
+    <label>Закріплений інструктор<select name="instructor_id"><option value="">— немає —</option>
+      {% for i in instructors %}<option value="{{ i.employee_id }}">{{ i.full_name }} ({{ i.cats }})</option>{% endfor %}</select></label>
+    <label>Наступне ТО<input type="date" name="next_service_date" value="{{ default_next }}" required></label>
+    <button>Додати автомобіль</button>
+  </form>
+</details>
+{% endif %}
+{% endblock %}

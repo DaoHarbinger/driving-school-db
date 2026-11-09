@@ -1,0 +1,11 @@
+# облікові дані резервного копіювання (шаблон - backup.cnf.example)
+backup/backup.cnf
+# резервні копії та робочі файли PITR
+backups/
+backup/backups/
+backup/pitr_work/
+*.sql.gz
+*.sql.gz.sha256
+*.zip
+# Python
+__pycache__/

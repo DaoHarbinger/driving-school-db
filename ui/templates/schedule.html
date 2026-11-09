@@ -1,0 +1,62 @@
+{% extends "base.html" %}{% from "_macros.html" import table %}
+{% block content %}
+<h1>Розклад інструктора і запис на практику</h1>
+<form class="filters">
+  <label>Інструктор
+    <select name="instructor_id">{% for i in instructors %}
+      <option value="{{ i.employee_id }}" {{ 'selected' if i.employee_id == instructor_id }}>{{ i.full_name }}</option>{% endfor %}
+    </select></label>
+  <label>Тиждень (будь-яка дата)<input type="date" name="week" value="{{ week }}"></label>
+  <label>Вільний час на дату<input type="date" name="day" value="{{ day }}"></label>
+  <button>Показати</button>
+</form>
+
+<div class="cols">
+  <section class="wide">
+    <h2>Заняття на тиждень</h2>
+    {% if lessons %}
+    <div class="scroll"><table>
+      <thead><tr><th>Дата</th><th>День</th><th>З</th><th>До</th><th>Курсант</th><th>Автомобіль</th><th>Статус</th><th></th></tr></thead>
+      <tbody>
+      {% for r in lessons %}
+        <tr>
+          <td>{{ r.lesson_date|fmt }}</td><td>{{ r.day_name }}</td><td>{{ r.time_from }}</td><td>{{ r.time_to }}</td>
+          <td class="c-student">{{ r.student }}</td><td>{{ r.vehicle }}</td><td class="v-{{ r.status }}">{{ r.status|fmt }}</td>
+          <td class="actions">
+            {% if r.status == 'planned' %}
+            <form method="post" action="{{ url_for('cancel_practice') }}"
+                  onsubmit="return confirm('Скасувати заняття {{ r.lesson_date|fmt }} {{ r.time_from }} ({{ r.student }})?');">
+              <input type="hidden" name="lesson_id" value="{{ r.lesson_id }}">
+              <input type="hidden" name="instructor_id" value="{{ instructor_id }}">
+              <input type="hidden" name="week" value="{{ week }}"><input type="hidden" name="day" value="{{ day }}">
+              <button class="secondary">Скасувати</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    {% else %}<p class="muted">На цей тиждень занять немає</p>{% endif %}
+  </section>
+  <section>
+    <h2>Вільні слоти {{ day }}</h2>
+    {% if slots %}<div class="slots">{% for s in slots %}<span>{{ s.time_from }}–{{ s.time_to }}</span>{% endfor %}</div>
+    {% else %}<p class="muted">Вільних слотів немає (зайнято або вичерпано ліміт 8 год)</p>{% endif %}
+
+    <h2>Записати курсанта</h2>
+    <form method="post" class="card">
+      <input type="hidden" name="instructor_id" value="{{ instructor_id }}">
+      <label>Курсант
+        <select name="enrollment_id" required>{% for e in enrollments %}
+          <option value="{{ e.enrollment_id }}">{{ e.student }} ({{ e.group_name }})</option>{% endfor %}
+        </select></label>
+      <label>Початок<input type="datetime-local" name="starts_at" value="{{ day }}T10:00" step="1800" required></label>
+      <label>Тривалість, год
+        <select name="duration"><option>1.0</option><option>1.5</option><option selected>2.0</option></select></label>
+      <button>Записати</button>
+      <p class="muted small">Усі правила (накладки, меддовідка, кваліфікація, ТО, ліміт 8 год) перевіряє тригер бази даних.</p>
+    </form>
+  </section>
+</div>
+{% endblock %}

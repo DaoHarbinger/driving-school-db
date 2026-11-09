@@ -1,0 +1,62 @@
+{% extends "base.html" %}{% from "_macros.html" import table %}
+{% block content %}
+<h1>Допуск та іспити</h1>
+<form class="filters">
+  <label>Група
+    <select name="group"><option value="">усі групи</option>
+      {% for g in groups %}<option {{ 'selected' if g.name == group }}>{{ g.name }}</option>{% endfor %}
+    </select></label>
+  <button>Показати</button>
+</form>
+
+<div class="cols">
+  <section class="wide">
+    <h2>Курсанти, що навчаються</h2>
+    <p class="muted small">Допуск до внутрішніх іспитів: мінімум годин теорії й практики, повна оплата, чинна меддовідка.
+      До підсумкового - лише після складання обох внутрішніх іспитів.</p>
+    {% if rows %}
+    <div class="scroll"><table>
+      <thead><tr><th>Курсант</th><th>Група</th><th>Теорія</th><th>Практика</th><th>Борг</th><th>Допуск</th><th>Складені іспити</th></tr></thead>
+      <tbody>{% for r in rows %}
+        <tr><td class="c-student">{{ r.student }}</td><td>{{ r.group_name }}</td>
+          <td>{{ r.theory_hours|fmt }} / {{ r.theory_hours_min }}</td><td>{{ r.practice_hours|fmt }} / {{ r.practice_hours_min }}</td>
+          <td>{{ r.debt|fmt }}</td>
+          <td class="c-reasons">{% if r.admitted %}<span class="v-studying">допущено</span>{% else %}{{ r.reasons }}{% endif %}</td>
+          <td class="c-note">{{ r.exams_done or '—' }}</td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    {% else %}<p class="muted">Немає курсантів</p>{% endif %}
+
+    <h2>Останні результати</h2>
+    {{ table(history, ['exam_date','student','group_name','exam_type','attempt_no','score','passed'], 'Іспитів ще не було') }}
+  </section>
+
+  <section>
+    <h2>Внести результат іспиту</h2>
+    <form method="post" class="card">
+      <input type="hidden" name="group" value="{{ group or '' }}">
+      <label>Курсант
+        <select name="enrollment_id" required>{% for r in rows %}
+          <option value="{{ r.enrollment_id }}">{{ r.student }} ({{ r.group_name }}){{ ' ✓ допущено' if r.admitted }}</option>{% endfor %}
+        </select></label>
+      <label>Іспит
+        <select name="exam_code" id="exam_code" onchange="toggleExam()">
+          <option value="internal_theory">Внутрішній з теорії (бал, прохідний 90)</option>
+          <option value="internal_practice">Внутрішній з практики (залік)</option>
+          <option value="final">Підсумковий (залік)</option>
+        </select></label>
+      <label>Дата<input type="date" name="exam_date" value="{{ today }}" max="{{ today }}" required></label>
+      <label id="score_box">Бал (0-100)<input type="number" name="score" min="0" max="100"></label>
+      <label id="passed_box" style="display:none">Результат
+        <select name="passed"><option value="1">склав</option><option value="0">не склав</option></select></label>
+      <button>Зберегти результат</button>
+      <p class="muted small">Номер спроби база рахує сама. Для теорії «склав / не склав» визначається балом.
+        Після складеного підсумкового іспиту курсант отримує статус «закінчив».</p>
+    </form>
+  </section>
+</div>
+<script>
+function toggleExam(){ const t=document.getElementById('exam_code').value==='internal_theory';
+  document.getElementById('score_box').style.display=t?'':'none'; document.getElementById('passed_box').style.display=t?'none':''; }
+</script>
+{% endblock %}

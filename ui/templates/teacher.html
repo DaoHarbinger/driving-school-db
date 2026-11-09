@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Відвідуваність теоретичних занять</h1>
+<form class="filters">
+  <label>Заняття
+    <select name="lesson_id">{% for l in lessons %}
+      <option value="{{ l.lesson_id }}" {{ 'selected' if l.lesson_id == lesson_id }}>{{ l.starts_at|fmt }} · {{ l.group_name }} · {{ l.topic }}</option>{% endfor %}
+    </select></label>
+  <button>Відкрити</button>
+</form>
+{% if rows %}
+<form method="post">
+  <input type="hidden" name="lesson_id" value="{{ lesson_id }}">
+  <table>
+    <thead><tr><th>Курсант</th><th>Відмітка</th></tr></thead>
+    <tbody>
+    {% for r in rows %}
+      {% set cur = 'present' if r.present else (r.absence_reason or ('present' if r.present is none else 'unexcused')) %}
+      <tr><td>{{ r.student }}</td>
+        <td><select name="p_{{ r.enrollment_id }}">
+          <option value="present"   {{ 'selected' if cur == 'present' }}>присутній</option>
+          <option value="illness"   {{ 'selected' if cur == 'illness' }}>відсутній: хвороба</option>
+          <option value="excused"   {{ 'selected' if cur == 'excused' }}>відсутній: поважна причина</option>
+          <option value="unexcused" {{ 'selected' if cur == 'unexcused' }}>відсутній: без поважної причини</option>
+        </select></td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <button>Зберегти відвідуваність</button>
+</form>
+{% else %}<p class="muted">Немає курсантів або занять</p>{% endif %}
+{% endblock %}

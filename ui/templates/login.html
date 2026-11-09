@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="login">
+  <h1>Автошкола</h1>
+  <p class="muted">Вхід під обліковим записом MySQL. Права визначає база даних.</p>
+  <form method="post">
+    <label>Користувач<input name="user" value="{{ user }}" required autofocus></label>
+    <label>Пароль<input name="password" type="password" required></label>
+    <button>Увійти</button>
+  </form>
+  <details class="hint"><summary>Навчальні облікові записи</summary>
+    <table>
+      <tr><td>manager_olena</td><td>Mngr_2026_ds!</td><td>менеджер</td></tr>
+      <tr><td>acc_iryna</td><td>Acc_2026_ds!</td><td>бухгалтер</td></tr>
+      <tr><td>instr_bondarenko</td><td>Instr_2026_ds!</td><td>інструктор</td></tr>
+      <tr><td>teacher_kovalchuk</td><td>Teach_2026_ds!</td><td>викладач</td></tr>
+      <tr><td>auditor</td><td>Audit_2026_ds!</td><td>аудитор</td></tr>
+      <tr><td>ds_admin</td><td>Adm!n_2026_ds</td><td>адміністратор</td></tr>
+    </table>
+  </details>
+</section>
+{% endblock %}
